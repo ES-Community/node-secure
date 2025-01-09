@@ -22,6 +22,7 @@ import * as report from "./endpoints/report.js";
 import * as middleware from "./middleware.js";
 import * as wsHandlers from "./websocket/index.js";
 import { logger } from "./logger.js";
+import { appCache } from "./cache.js";
 
 export function buildServer(dataFilePath, options = {}) {
   const httpConfigPort = typeof options.port === "number" ? options.port : 0;
@@ -65,6 +66,9 @@ export function buildServer(dataFilePath, options = {}) {
   if (enableWS) {
     const websocket = new WebSocketServer({ port: 1338 });
     websocket.on("connection", async(socket) => {
+      if (appCache.isStandalone) {
+        return;
+      }
       socket.on("message", async(rawMessage) => {
         const message = JSON.parse(rawMessage);
         logger.info(`[ws](message: ${JSON.stringify(message)})`);

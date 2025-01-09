@@ -31,9 +31,13 @@ document.addEventListener("DOMContentLoaded", async() => {
   window.scannedPackageCache = [];
   window.locker = null;
   window.popup = new Popup();
-  window.settings = await new Settings().fetchUserConfig();
-  window.i18n = await new i18n().fetch();
   window.navigation = new ViewNavigation();
+  window.settings = await new Settings().fetchUserConfig();
+  if (window.settings.config.standalone) {
+    console.log(`[INFO] Standalone mode activated`);
+    window.navigation.hideMenu("search--view", { navigateAway: true });
+  }
+  window.i18n = await new i18n().fetch();
   window.wiki = new Wiki();
 
   await init();
@@ -109,7 +113,18 @@ async function init(options = {}) {
   window.locker = new Locker(nsn);
   window.legend = new Legend({ show: window.settings.config.showFriendlyDependencies });
   new HomeView(secureDataSet, nsn);
-  searchview ??= new SearchView(secureDataSet, nsn);
+  if (window.settings.config.standalone) {
+    window.activePackage = secureDataSet.data.rootDependencyName;
+    initSearchNav(void 0, {
+      initSinglePackage: secureDataSet.data.rootDependencyName,
+      searchOptions: {
+        nsn, secureDataSet
+      }
+    });
+  }
+  else {
+    searchview ??= new SearchView(secureDataSet, nsn);
+  }
 
   window.addEventListener("package-info-closed", () => {
     window.networkNav.currentNodeParams = null;

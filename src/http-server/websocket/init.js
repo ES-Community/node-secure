@@ -3,6 +3,10 @@ import { appCache } from "../cache.js";
 import { logger } from "../logger.js";
 
 export async function init(socket, lock = false) {
+  if (appCache.isStandalone) {
+    return;
+  }
+
   try {
     const { current, lru, older, root } = await appCache.payloadsList();
     logger.info(`[ws|init](lru: ${lru}|older: ${older}|current: ${current}|root: ${root})`);

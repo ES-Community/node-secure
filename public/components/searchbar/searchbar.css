@@ -206,6 +206,7 @@ div.search-result-pannel .package+.package {
   height: 30px;
   left: 50px;
   padding-left: 20px;
+  min-width: 455px;
   max-width: calc(100vw - 70px);
   box-sizing: border-box;
   background: var(--primary);
@@ -227,6 +228,7 @@ div.search-result-pannel .package+.package {
   display: flex;
   max-width: calc(100vw - 70px - 264px);
   background: var(--primary);
+  margin-left: auto;
 }
 
 #search-nav .packages>.package {

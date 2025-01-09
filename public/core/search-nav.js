@@ -3,14 +3,20 @@ import { createDOMElement, parseNpmSpec } from "../common/utils";
 import { SearchBar } from "../components/searchbar/searchbar";
 
 export function initSearchNav(data, options) {
-  const { initFromZero = true, searchOptions = null } = options;
+  const { initFromZero = true, searchOptions = null, initSinglePackage } = options;
 
   const searchNavElement = document.getElementById("search-nav");
   if (!searchNavElement) {
     throw new Error("Unable to found search navigation");
   }
 
-  if (initFromZero) {
+  if (initSinglePackage) {
+    searchNavElement.innerHTML = "";
+    searchNavElement.appendChild(
+      initSingleNavigation(initSinglePackage)
+    );
+  }
+  else if (initFromZero) {
     searchNavElement.innerHTML = "";
     searchNavElement.appendChild(
       initPackagesNavigation(data)
@@ -121,4 +127,24 @@ function renderPackageRemoveButton(packageName, options) {
   }, { once: true });
 
   return removeButton;
+}
+
+function initSingleNavigation(packageName) {
+  const fragment = document.createDocumentFragment();
+  const container = createDOMElement("div", {
+    classList: ["packages"]
+  });
+
+  const pkgElement = createDOMElement("div", {
+    classList: ["package"],
+    childs: [
+      createDOMElement("p", { text: packageName })
+    ]
+  });
+  pkgElement.dataset.name = packageName;
+
+  container.appendChild(pkgElement);
+  fragment.append(container);
+
+  return fragment;
 }

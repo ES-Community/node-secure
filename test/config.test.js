@@ -29,7 +29,8 @@ describe("config", { concurrency: 1 }, () => {
 
     assert.deepStrictEqual(value, {
       defaultPackageMenu: "info",
-      ignore: { flags: [], warnings: [] }
+      ignore: { flags: [], warnings: [] },
+      standalone: false
     });
   });
 
@@ -37,14 +38,14 @@ describe("config", { concurrency: 1 }, () => {
     await cacache.put(CACHE_PATH, kConfigKey, JSON.stringify({ foo: "bar" }));
     const value = await get();
 
-    assert.deepStrictEqual(value, { foo: "bar" });
+    assert.deepStrictEqual(value, { foo: "bar", standalone: false });
   });
 
   it("should set config in cache", async() => {
     await set({ foo: "baz" });
     const value = await get();
 
-    assert.deepStrictEqual(value, { foo: "baz" });
+    assert.deepStrictEqual(value, { foo: "baz", standalone: false });
   });
 });
 

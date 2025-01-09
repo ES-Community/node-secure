@@ -19,6 +19,13 @@ export const CACHE_PATH = path.join(os.tmpdir(), "nsecure-cli");
 export const DEFAULT_PAYLOAD_PATH = path.join(process.cwd(), "nsecure-result.json");
 
 class _AppCache {
+  /**
+   * - `undefined`: unknown
+   * - `true`: standalone
+   * - `false`: not standalone
+   */
+  isStandalone;
+
   constructor() {
     fs.mkdirSync(kPayloadsPath, { recursive: true });
   }
@@ -126,6 +133,21 @@ class _AppCache {
       lastUsed,
       root
     };
+  }
+
+  async setStandalonePayload(payload) {
+    await cacache.put(CACHE_PATH, "standalone", JSON.stringify(payload));
+  }
+
+  async getStandalonePayload() {
+    try {
+      const { data } = await cacache.get(CACHE_PATH, "standalone");
+
+      return JSON.parse(data.toString());
+    }
+    catch {
+      return null;
+    }
   }
 }
 

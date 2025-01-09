@@ -176,7 +176,9 @@ export default class NodeSecureDataSet extends EventTarget {
     if (author === null) {
       return;
     }
-    const contributor = contributors.find((contributor) => contributor.email === author.email && contributor.npmAvatar !== null);
+    const contributor = contributors.find(
+      (contributor) => contributor?.email === author.email && contributor?.npmAvatar !== null
+    );
 
     if (this.authors.has(author.name)) {
       this.authors.get(author.name).packages.add(spec);
