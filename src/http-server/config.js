@@ -1,16 +1,31 @@
+// Import Node.js Dependencies
+import fs from "node:fs";
+
 // Import Internal Dependencies
-import { appCache } from "./cache.js";
+import { appCache, DEFAULT_PAYLOAD_PATH } from "./cache.js";
 import { logger } from "./logger.js";
 
 // CONSTANTS
 const kDefaultConfig = {
   defaultPackageMenu: "info",
-  ignore: { flags: [], warnings: [] }
+  ignore: { flags: [], warnings: [] },
+  standalone: false
 };
 
 export async function get() {
   try {
     const config = await appCache.getConfig();
+
+    let standalone = false;
+    const standalonePayload = await appCache.getStandalonePayload();
+    if (standalonePayload && fs.existsSync(DEFAULT_PAYLOAD_PATH)) {
+      const localPayload = JSON.parse(fs.readFileSync(DEFAULT_PAYLOAD_PATH, "utf-8"));
+      if (localPayload.id === standalonePayload.id) {
+        standalone = true;
+      }
+    }
+    appCache.isStandalone = standalone;
+    Object.assign(config, { standalone });
 
     const {
       defaultPackageMenu,
@@ -19,7 +34,9 @@ export async function get() {
         warnings
       } = {}
     } = config;
-    logger.info(`[config|get](defaultPackageMenu: ${defaultPackageMenu}|ignore-flag: ${flags}|ignore-warnings: ${warnings})`);
+    logger.info(
+      `[config|get](defaultPackageMenu: ${defaultPackageMenu}|flags: ${flags}|warnings: ${warnings}|standalone: ${standalone})`
+    );
 
     return config;
   }

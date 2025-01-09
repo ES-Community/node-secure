@@ -13,6 +13,14 @@ import { logger } from "../logger.js";
 const kDefaultPayloadPath = path.join(process.cwd(), "nsecure-result.json");
 
 export async function get(req, res) {
+  if (appCache.isStandalone) {
+    logger.info("[data|get] standalone mode");
+    const payload = await appCache.getStandalonePayload();
+    send(res, 200, payload);
+
+    return;
+  }
+
   try {
     const { current, lru } = await appCache.payloadsList();
     logger.info(`[data|get](current: ${current})`);

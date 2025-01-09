@@ -75,7 +75,7 @@ export class ViewNavigation {
 
     const searchbar = document.getElementById("searchbar");
     if (searchbar) {
-      searchbar.style.display =  menuName === "network--view" ? "flex" : "none";
+      searchbar.style.display = menuName === "network--view" ? "flex" : "none";
     }
 
     this.activeMenu = selectedNav;
@@ -112,6 +112,21 @@ export class ViewNavigation {
 
       this.disableActiveMenu();
       this.setNewActiveMenu(selectedNav);
+    }
+  }
+
+  hideMenu(menuName, options = {}) {
+    const { navigateAway = false } = options;
+
+    const menu = this.menus.get(menuName);
+    if (!menu) {
+      return;
+    }
+
+    menu.classList.add("hidden");
+
+    if (navigateAway && this.activeMenu.isEqualNode(menu)) {
+      this.setNavByName("network--view");
     }
   }
 }

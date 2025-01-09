@@ -212,10 +212,10 @@ describe("httpServer", { concurrency: 1 }, () => {
   test("GET '/config' should return the config", async() => {
     const { data: actualConfig } = await get(new URL("/config", HTTP_URL));
 
-    await cacache.put(CACHE_PATH, kConfigKey, JSON.stringify({ foo: "bar" }));
+    await cacache.put(CACHE_PATH, kConfigKey, JSON.stringify({ foo: "bar", standalone: false }));
     const result = await get(new URL("/config", HTTP_URL));
 
-    assert.deepEqual(result.data, { foo: "bar" });
+    assert.deepEqual(result.data, { foo: "bar", standalone: false });
 
     await fetch(new URL("/config", HTTP_URL), {
       method: "PUT",
