@@ -1,7 +1,7 @@
 // Import Node.js Dependencies
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { after, before, describe, test } from "node:test";
+import { after, before, describe, test, mock } from "node:test";
 import { once } from "node:events";
 import path from "node:path";
 import assert from "node:assert";
@@ -79,21 +79,47 @@ describe("httpServer", { concurrency: 1 }, () => {
     assert.equal(result.data, templateStr);
   });
 
-  test("'/' should fail", async() => {
-    const errors = [];
-    const module = await esmock("../src/http-server/endpoints/root.js", {
-      "@polka/send-type": {
-        default: (res, status, { error }) => errors.push(error)
-      }
-    });
+  // test("'/' should fail", async() => {
+  //   const errors = [];
+  //   const module = await esmock("../src/http-server/endpoints/root.js", {
+  //     "@polka/send-type": {
+  //       default: (res, status, { error }) => errors.push(error)
+  //     }
+  //   });
+   
 
-    await module.get({}, ({
+  //   await module.get({}, ({
+  //     writeHead: () => {
+  //       throw new Error("fake error");
+  //     }
+  //   }));
+  //   assert.deepEqual(errors, ["fake error"]);
+  // });
+  
+  //this converts the above 'commentted out' test using the new MockTracker class 
+  test("'/' should fail", async () => {
+    const errors = [];
+  
+    // Mock the "@polka/send-type" module using mock.module
+    mock.module('@polka/send-type', {
+      default: (res, status, { error }) => errors.push(error)  // Mock the default export function
+    });
+  
+    // Import the module after setting up the mock
+    const module = await import("../src/http-server/endpoints/root.js");
+  
+    // Run the test logic
+    await module.get({}, {
       writeHead: () => {
         throw new Error("fake error");
-      }
-    }));
+      },
+    });
+  
+    // Verify that the error was correctly pushed into the errors array
     assert.deepEqual(errors, ["fake error"]);
   });
+
+
 
   test("'/flags' should return the flags list as JSON", async() => {
     const result = await get(new URL("/flags", HTTP_URL));
@@ -121,21 +147,41 @@ describe("httpServer", { concurrency: 1 }, () => {
     });
   });
 
-  test("'/flags/description/:title' should fail", async() => {
-    const module = await esmock("../src/http-server/endpoints/flags.js", {
-      stream: {
-        pipeline: (stream, res, err) => err("fake error")
-      },
-      fs: {
-        createReadStream: () => "foo"
-      }
-    });
-    const logs = [];
-    console.error = (data) => logs.push(data);
+  // test("'/flags/description/:title' should fail", async() => {
+  //   const module = await esmock("../src/http-server/endpoints/flags.js", {
+  //     stream: {
+  //       pipeline: (stream, res, err) => err("fake error")
+  //     },
+  //     fs: {
+  //       createReadStream: () => "foo"
+  //     }
+  //   });
+  //   const logs = [];
+  //   console.error = (data) => logs.push(data);
 
-    await module.get({ params: { title: "hasWarnings" } }, ({ writeHead: () => true }));
+  //   await module.get({ params: { title: "hasWarnings" } }, ({ writeHead: () => true }));
+  //   assert.deepEqual(logs, ["fake error"]);
+  // });
+  
+  //this converts the above 'commentted out' test using the new MockTracker class 
+  test("'/flags/description/:title' should fail", async () => {
+    const logs = [];
+
+    mock.module('stream', {
+      pipeline: (stream, res, err) => err("fake error"), 
+    });
+    mock.module('fs', {
+      createReadStream: () => "foo", 
+    });
+  
+    console.error = (data) => logs.push(data);
+  
+    const module = await import("../src/http-server/endpoints/flags.js");
+    await module.get({ params: { title: "hasWarnings" } }, { writeHead: () => true });
     assert.deepEqual(logs, ["fake error"]);
   });
+
+
 
   test("'/data' should return the fixture payload we expect", async() => {
     const result = await get(new URL("/data", HTTP_URL));
@@ -320,23 +366,53 @@ describe("httpServer", { concurrency: 1 }, () => {
   });
 });
 
+// describe("httpServer without options", () => {
+//   let httpServer;
+//   let opened = false;
+//   // We want to disable WS
+//   process.env.NODE_ENV = "test";
+
+//   before(async() => {
+//     const module = await esmock("../src/http-server/index.js", {
+//       open: () => (opened = true)
+//     });
+
+//     httpServer = module.buildServer(JSON_PATH);
+//     await once(httpServer.server, "listening");
+//     enableDestroy(httpServer.server);
+//   });
+
+//   after(async() => {
+//     httpServer.server.destroy();
+//   });
+
+//   test("should listen on random port", () => {
+//     assert.ok(httpServer.server.address().port > 0);
+//   });
+
+//   test("should have openLink to true", () => {
+//     assert.equal(opened, true);
+//   });
+// });
+
+//this converts the above 'commentted out' test using the new MockTracker class 
 describe("httpServer without options", () => {
   let httpServer;
   let opened = false;
-  // We want to disable WS
   process.env.NODE_ENV = "test";
 
-  before(async() => {
-    const module = await esmock("../src/http-server/index.js", {
-      open: () => (opened = true)
+  before(async () => {
+    mock.module("../src/http-server/index.js", {
+      open: () => (opened = true) 
     });
 
-    httpServer = module.buildServer(JSON_PATH);
+    const module = await import("../src/http-server/index.js");
+    httpServer = module.buildServer(JSON_PATH); 
     await once(httpServer.server, "listening");
     enableDestroy(httpServer.server);
   });
 
-  after(async() => {
+  after(async () => {
     httpServer.server.destroy();
   });
 
@@ -348,6 +424,8 @@ describe("httpServer without options", () => {
     assert.equal(opened, true);
   });
 });
+
+
 
 /**
  * HELPERS

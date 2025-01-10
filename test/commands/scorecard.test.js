@@ -1,7 +1,7 @@
 // Import Node.js Dependencies
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { test } from "node:test";
+import { test, mock } from "node:test";
 import assert from "node:assert";
 
 // Import Third-party Dependencies
@@ -97,25 +97,53 @@ test("should not display scorecard for unknown repository", async() => {
   assert.deepEqual(givenLines, expectedLines, `lines should be ${expectedLines}`);
 });
 
-test("should retrieve repository whithin git config", async() => {
-  const testingModule = await esmock("../../src/commands/scorecard.js", {
-    fs: {
-      readFileSync: () => [
-        "[remote \"origin\"]",
-        "\turl = git@github.com:myawesome/repository.git"
-      ].join("\n")
-    }
+// test("should retrieve repository whithin git config", async() => {
+//   const testingModule = await esmock("../../src/commands/scorecard.js", {
+//     fs: {
+//       readFileSync: () => [
+//         "[remote \"origin\"]",
+//         "\turl = git@github.com:myawesome/repository.git"
+//       ].join("\n")
+//     }
+//   });
+
+//   assert.deepEqual(testingModule.getCurrentRepository(), Ok(["myawesome/repository", "github"]));
+// });
+
+//this test below converts the above 'commentted out' test using the new MockTracker class 
+test("should retrieve repository within git config", async () => {
+  mock.module('fs', {
+    readFileSync: () => [
+      "[remote \"origin\"]",
+      "\turl = git@github.com:myawesome/repository.git"
+    ].join("\n") 
   });
+
+  const testingModule = await import("../../src/commands/scorecard.js");
 
   assert.deepEqual(testingModule.getCurrentRepository(), Ok(["myawesome/repository", "github"]));
 });
 
-test("should not find origin remote", async() => {
-  const testingModule = await esmock("../../src/commands/scorecard.js", {
-    fs: {
-      readFileSync: () => "just one line"
-    }
+// test("should not find origin remote", async() => {
+//   const testingModule = await esmock("../../src/commands/scorecard.js", {
+//     fs: {
+//       readFileSync: () => "just one line"
+//     }
+//   });
+//   const result = testingModule.getCurrentRepository();
+
+//   assert.equal(result.err, true);
+//   assert.equal(result.val, "Cannot find origin remote.");
+// });
+
+//this test below converts the above 'commentted out' test using the new MockTracker class 
+test("should not find origin remote", async () => {
+  mock.module('fs', {
+    readFileSync: () => "just one line" 
   });
+
+  const testingModule = await import("../../src/commands/scorecard.js");
+
   const result = testingModule.getCurrentRepository();
 
   assert.equal(result.err, true);
