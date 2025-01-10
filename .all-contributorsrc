@@ -159,6 +159,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "albertshay888",
+      "name": "Albert Shay",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20329123?v=4",
+      "profile": "https://www.linkedin.com/in/albertshay",
+      "contributions": [
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,
