@@ -1,17 +1,18 @@
 // Import Node.js Dependencies
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { test } from "node:test";
+import { test, mock } from "node:test";
 import assert from "node:assert";
 
 // Import Third-party Dependencies
-import esmock from "esmock";
 import { API_URL } from "@nodesecure/ossf-scorecard-sdk";
 import { Ok } from "@openally/result";
 
 // Import Internal Dependencies
 import { runProcess } from "../helpers/cliCommandRunner.js";
 import { arrayFromAsync, getExpectedScorecardLines } from "../helpers/utils.js";
+import * as testingModule from "../../src/commands/scorecard.js";
 
 // CONSTANTS
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -97,25 +98,21 @@ test("should not display scorecard for unknown repository", async() => {
   assert.deepEqual(givenLines, expectedLines, `lines should be ${expectedLines}`);
 });
 
-test("should retrieve repository whithin git config", async() => {
-  const testingModule = await esmock("../../src/commands/scorecard.js", {
-    fs: {
-      readFileSync: () => [
-        "[remote \"origin\"]",
-        "\turl = git@github.com:myawesome/repository.git"
-      ].join("\n")
-    }
-  });
+test("should retrieve repository within git config", async() => {
+  const readFileSyncMock = mock.method(fs, "readFileSync", () => [
+    "[remote \"origin\"]",
+    "\turl = git@github.com:myawesome/repository.git"
+  ].join("\n"));
 
-  assert.deepEqual(testingModule.getCurrentRepository(), Ok(["myawesome/repository", "github"]));
+  assert.deepEqual(
+    testingModule.getCurrentRepository(),
+    Ok(["myawesome/repository", "github"])
+  );
+
+  readFileSyncMock.restore(); 
 });
 
 test("should not find origin remote", async() => {
-  const testingModule = await esmock("../../src/commands/scorecard.js", {
-    fs: {
-      readFileSync: () => "just one line"
-    }
-  });
   const result = testingModule.getCurrentRepository();
 
   assert.equal(result.err, true);

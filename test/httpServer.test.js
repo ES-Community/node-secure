@@ -1,10 +1,11 @@
 // Import Node.js Dependencies
-import fs from "node:fs";
+import fs, { createReadStream } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { after, before, describe, test } from "node:test";
+import { after, before, describe, test, mock } from "node:test";
 import { once } from "node:events";
 import path from "node:path";
 import assert from "node:assert";
+import { pipeline as streamPipeline } from "node:stream";
 
 // Import Third-party Dependencies
 import { get, post, MockAgent, getGlobalDispatcher, setGlobalDispatcher } from "@myunisoft/httpie";
@@ -12,12 +13,14 @@ import zup from "zup";
 import * as i18n from "@nodesecure/i18n";
 import * as flags from "@nodesecure/flags";
 import enableDestroy from "server-destroy";
-import esmock from "esmock";
 import cacache from "cacache";
+import sendType from "@polka/send-type";
 
 // Require Internal Dependencies
 import { buildServer } from "../src/http-server/index.js";
 import { CACHE_PATH } from "../src/http-server/cache.js";
+import * as rootModule from "../src/http-server/endpoints/root.js";
+import * as flagsModule from "../src/http-server/endpoints/flags.js";
 
 // CONSTANTS
 const HTTP_PORT = 17049;
@@ -79,20 +82,18 @@ describe("httpServer", { concurrency: 1 }, () => {
     assert.equal(result.data, templateStr);
   });
 
-  test("'/' should fail", async() => {
+  test("'/' should fail", () => {
     const errors = [];
-    const module = await esmock("../src/http-server/endpoints/root.js", {
-      "@polka/send-type": {
-        default: (_res, _status, { error }) => errors.push(error)
-      }
-    });
+    const sendTypeMock = mock.method(sendType, "default", (res, status, { error }) => errors.push(error));
 
-    await module.get({}, ({
+    rootModule.get({}, {
       writeHead: () => {
         throw new Error("fake error");
       }
-    }));
+    });
+
     assert.deepEqual(errors, ["fake error"]);
+    sendTypeMock.mock.restore();
   });
 
   test("'/flags' should return the flags list as JSON", async() => {
@@ -121,20 +122,29 @@ describe("httpServer", { concurrency: 1 }, () => {
     });
   });
 
-  test("'/flags/description/:title' should fail", async() => {
-    const module = await esmock("../src/http-server/endpoints/flags.js", {
-      stream: {
-        pipeline: (_stream, _res, err) => err("fake error")
-      },
-      fs: {
-        createReadStream: () => "foo"
-      }
-    });
+  test("'/flags/description/:title' should fail", () => {
     const logs = [];
+    const streamPipelineMock = mock.method(streamPipeline, "pipeline", (stream, res, err) => err("fake error"));
+    const createReadStreamMock = mock.method(createReadStream, "default", () => "foo");
     console.error = (data) => logs.push(data);
-
-    await module.get({ params: { title: "hasWarnings" } }, ({ writeHead: () => true }));
+  
+    flagsModule.get({ params: { title: "hasWarnings" } }, { writeHead: () => true });
+  
     assert.deepEqual(logs, ["fake error"]);
+  
+    streamPipelineMock.restore(); 
+    createReadStreamMock.restore(); 
+  });
+  
+  before(async() => {
+    const openMock = mock.method(buildServer, "open", () => {
+      opened = true;
+    });
+  
+    httpServer = buildServer(JSON_PATH);
+    await once(httpServer.server, "listening");
+    enableDestroy(httpServer.server);
+    openMock.restore(); 
   });
 
   test("'/data' should return the fixture payload we expect", async() => {
@@ -323,17 +333,17 @@ describe("httpServer", { concurrency: 1 }, () => {
 describe("httpServer without options", () => {
   let httpServer;
   let opened = false;
-  // We want to disable WS
   process.env.NODE_ENV = "test";
 
   before(async() => {
-    const module = await esmock("../src/http-server/index.js", {
-      open: () => (opened = true)
+    const openMock = mock.method(buildServer, "open", () => {
+      opened = true;
     });
 
-    httpServer = module.buildServer(JSON_PATH);
+    httpServer = buildServer(JSON_PATH);
     await once(httpServer.server, "listening");
     enableDestroy(httpServer.server);
+    openMock.mock.restoreAll();
   });
 
   after(async() => {

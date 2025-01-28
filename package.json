@@ -17,7 +17,7 @@
     "prepublishOnly": "rimraf ./dist && npm run build && pkg-ok",
     "build": "node ./esbuild.config.js",
     "test": "npm run test-only && npm run lint",
-    "test-only": "glob -c \"node --loader=esmock --no-warnings --test-concurrency 1 --test\" \"test/**/*.test.js\"",
+    "test-only": "glob -c \"node --test-concurrency 1 --test\" \"test/**/*.test.js\"",
     "coverage": "c8 --reporter=lcov npm run test",
     "clear:cache": "node ./scripts/clear-cache.js"
   },
@@ -71,7 +71,6 @@
     "cross-env": "^7.0.3",
     "esbuild": "^0.24.0",
     "eslint-plugin-jsdoc": "^50.6.2",
-    "esmock": "^2.6.7",
     "glob": "^11.0.0",
     "http-server": "^14.1.1",
     "pkg-ok": "^3.0.0",
